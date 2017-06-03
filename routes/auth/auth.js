@@ -4,6 +4,8 @@
 var routes = require('./authRoutes');
 var express = require('express');
 var errorCodes = require('../base/errorCodes');
+var config = require('../config/pubConfig');
+var jwt = require('./jwt');
 var router = express.Router();
 
 routes.forEach(function (Route) {
@@ -13,12 +15,12 @@ routes.forEach(function (Route) {
 var Sample = ['Arpit','Sanket','Akshita'];
 
 function Gateway(req, res, next) {
-    var Token = readValue(req, 'jwt');
+    var Token = readValue(req, config.TokenTag);
     
     if (Token) {
-        Authorize(Token, function (authorized) {
-                if (authorized){
-                    req.UserId = Sample.indexOf(Token);
+        Authorize(Token, function (ID) {
+                if (ID){
+                    req.UserId = ID;
                     next();
                 }
                 else {
@@ -32,7 +34,10 @@ function Gateway(req, res, next) {
 }
 
 function readValue(req, name) {
-    if (req.cookies[name]) {
+    if (req.headers[name]){
+        return req.headers[name];
+    }
+    else if (req.cookies[name]) {
         return req.cookies[ name ];
     }
     else if (req.query[name]) {
@@ -45,11 +50,13 @@ function readValue(req, name) {
 }
 
 function Authorize(Token, callback) {
-    if (Sample.indexOf(Token)!=-1) {
-        callback(true);
+    var Payload = jwt.getPayload(Token);
+        
+    if (Payload.auth && Sample.indexOf(Payload.auth)!=-1) {
+        callback(Payload.auth);
     }
     else{
-        callback(false);
+        callback(null);
     }
 }
 
