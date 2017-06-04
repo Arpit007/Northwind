@@ -3,7 +3,7 @@
  */
 var routes = require('./authRoutes');
 var express = require('express');
-var errorCodes = require('../base/errorCodes');
+var errorCodes = require('../base/statusCodes');
 var config = require('../config/pubConfig');
 var jwt = require('./jwt');
 var router = express.Router();
@@ -50,12 +50,17 @@ function readValue(req, name) {
 }
 
 function Authorize(Token, callback) {
-    var Payload = jwt.getPayload(Token);
-        
-    if (Payload.auth && Sample.indexOf(Payload.auth)!=-1) {
-        callback(Payload.auth);
+    try {
+        var Payload = jwt.getPayload(Token);
+    
+        if (Payload.auth && Sample.indexOf(Payload.auth) != -1) {
+            callback(Payload.auth);
+        }
+        else {
+            callback(null);
+        }
     }
-    else{
+    catch (e){
         callback(null);
     }
 }

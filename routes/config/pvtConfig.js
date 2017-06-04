@@ -1,6 +1,7 @@
+var fs = require('fs');
 
 var config = {
-    TokenKey : 'Your Secret Key Here'
+    TokenKey : fs.readFileSync('./cert.pem').toString()
 };
 
 module.exports = config;
