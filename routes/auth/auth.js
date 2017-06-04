@@ -14,6 +14,8 @@ routes.forEach(function (Route) {
 
 var Sample = ['Arpit','Sanket','Akshita'];
 
+process.Users = Sample;
+
 function Gateway(req, res, next) {
     var Token = readValue(req, config.TokenTag);
     
@@ -53,7 +55,7 @@ function Authorize(Token, callback) {
     try {
         var Payload = jwt.getPayload(Token);
     
-        if (Payload.auth && Sample.indexOf(Payload.auth) != -1) {
+        if (Payload.auth && process.Users.indexOf(Payload.auth) != -1) {
             callback(Payload.auth);
         }
         else {
