@@ -4,15 +4,20 @@ var favicon = require('serve-favicon');
 var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
+
+
 var auth = require('./routes/auth/auth');
+var pubConfig = require('./routes/config/pubConfig');
+var pvtConfig = require('./routes/config/pvtConfig');
+
 
 var index = require('./routes/index');
 var users = require('./routes/users');
 
 var app = express();
-
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
+
 
 app.use(logger('dev'));
 app.use(bodyParser.json());
@@ -21,14 +26,20 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(auth);
 
+
 app.use('/',index);
 app.use('/users',users);
+
+
+app.locals.appName = pubConfig.appName;
+
 
 app.use(function(req, res, next) {
   var err = new Error('Not Found' + req.url);
   err.status = 404;
   next(err);
 });
+
 
 app.use(function(err, req, res, next) {
   // set locals, only providing error in development

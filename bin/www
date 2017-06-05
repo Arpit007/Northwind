@@ -3,6 +3,10 @@
 /**
  * Module dependencies.
  */
+var pvtConfig = require('../routes/config/pvtConfig');
+
+var mongoose = require('mongoose');
+global.db = mongoose.connect(pvtConfig.MongoUrl);
 
 var app = require('../app');
 var debug = require('debug')('northwind:server');

@@ -7,6 +7,7 @@ var errorCodes = require('../base/statusCodes');
 var config = require('../config/pubConfig');
 var jwt = require('./jwt');
 var router = express.Router();
+var user = require('../model/user');
 
 routes.forEach(function (Route) {
     router.all(Route, Gateway);
@@ -26,12 +27,14 @@ function Gateway(req, res, next) {
                     next();
                 }
                 else {
+                    delete req.cookies[config.TokenTag];
+                    delete req.headers[config.TokenTag];
                     writeUnauthorized(res);
                 }
         });
     }
     else {
-        writeUnauthorized(res);
+        writeLogin(res);
     }
 }
 
@@ -65,6 +68,12 @@ function Authorize(Token, callback) {
     catch (e){
         callback(null);
     }
+}
+
+function writeLogin(res) {
+    var Response = {Code: errorCodes.Unauthorized, Message: 'Login Required'};
+    res.writeHead(errorCodes.Unauthorized,{'Content-Type':'text/json'});
+    res.end(JSON.stringify(Response));
 }
 
 function writeUnauthorized(res) {

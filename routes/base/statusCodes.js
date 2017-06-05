@@ -6,7 +6,7 @@ var stausCodes ={
     Ok : 200,
     Created : 201,
     Accepted : 202,
-    Redirect : 302,
+    Redirect : 308,
     BadRequest : 400,
     Unauthorized : 401,
     Forbidden : 403,

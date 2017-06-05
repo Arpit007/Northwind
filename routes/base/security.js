@@ -7,8 +7,8 @@ var fs = require('fs');
 var pvtConfig = require('../config/pvtConfig');
 var pubConfig = require('../config/pubConfig');
 
-var algo1 = "aes192";
-var algo2 = "aes256";
+var algo1 = "aes256";
+var algo2 = "aes192";
 
 var encrypt = function (object) {
     var cipher = crypto.createCipheriv('aes-256-ecb', pvtConfig.TokenKey,"");
