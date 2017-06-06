@@ -1,7 +1,6 @@
 var express = require('express');
 var router = express.Router();
 var jwt = require('./auth/jwt');
-var statusCode = require('./base/statusCodes');
 
 /* GET home page. */
 router.get('/', function(req, res, next) {

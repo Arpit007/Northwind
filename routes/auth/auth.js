@@ -3,10 +3,10 @@
  */
 var routes = require('./authRoutes');
 var express = require('express');
-var errorCodes = require('../base/statusCodes');
-var config = require('../config/pubConfig');
-var jwt = require('./jwt');
+
 var router = express.Router();
+
+var jwt = require('./jwt');
 var user = require('../model/user');
 
 routes.forEach(function (Route) {
@@ -71,14 +71,14 @@ function Authorize(Token, callback) {
 }
 
 function writeLogin(res) {
-    var Response = {Code: errorCodes.Unauthorized, Message: 'Login Required'};
-    res.writeHead(errorCodes.Unauthorized,{'Content-Type':'text/json'});
+    var Response = {Code: statusCodes.Unauthorized, Message: 'Login Required'};
+    res.writeHead(statusCodes.Unauthorized,{'Content-Type':'text/json'});
     res.end(JSON.stringify(Response));
 }
 
 function writeUnauthorized(res) {
-    var Response = {Code: errorCodes.Unauthorized, Message: 'Unauthorized'};
-    res.writeHead(errorCodes.Unauthorized,{'Content-Type':'text/json'});
+    var Response = {Code: statusCodes.Unauthorized, Message: 'Unauthorized'};
+    res.writeHead(statusCodes.Unauthorized,{'Content-Type':'text/json'});
     res.end(JSON.stringify(Response));
 }
 

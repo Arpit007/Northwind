@@ -39,6 +39,21 @@ var Payload = function () {
     };
 };
 
+/**
+ * Get Payload From Jwt.Token
+ * Empty Payload on Error
+ * May return error
+ **/
 module.exports.getToken = getToken;
+
+/**
+ * Get Token on Encrypting Jwt.Payload
+ * May return null
+ * May Throw Error
+ **/
 module.exports.getPayload = getPayload;
+
+/**
+ * Custom Jwt Payload
+ * */
 module.exports.Payload = Payload;

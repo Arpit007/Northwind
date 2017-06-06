@@ -2,7 +2,7 @@
  * Created by Home Laptop on 04-Jun-17.
  */
 
-var stausCodes ={
+var statusCodes ={
     Ok : 200,
     Created : 201,
     Accepted : 202,
@@ -20,4 +20,4 @@ var stausCodes ={
     LoginTimeout : 440
 };
 
-module.exports = stausCodes;
+module.exports = statusCodes;
