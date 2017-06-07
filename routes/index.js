@@ -1,11 +1,10 @@
 var express = require('express');
 var router = express.Router();
-var jwt = require('./auth/jwt');
+var jwt = require('./src/core/jwt');
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
-  res.render('index', { title: 'Express' });
-  
+  res.render('index', { title: pubConfig.appName });
 });
 
 router.get('/reg', function(req, res, next) {

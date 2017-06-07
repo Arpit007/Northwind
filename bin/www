@@ -6,7 +6,7 @@
 
 var pvtConfig = require('../routes/config/pvtConfig');
 var pubConfig = require('../routes/config/pubConfig');
-var statusCodes = require('../routes/base/statusCodes');
+var statusCodes = require('../routes/src/core/statusCodes');
 
 global.pvtConfig = pvtConfig;
 global.pubConfig = pubConfig;
@@ -14,6 +14,7 @@ global.statusCodes = statusCodes;
 
 var mongoose = require('mongoose');
 global.db = mongoose.connect(pvtConfig.MongoUrl);
+
 var app = require('../app');
 var debug = require('debug')('northwind:server');
 var http = require('http');

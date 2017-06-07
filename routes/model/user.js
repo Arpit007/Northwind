@@ -1,8 +1,8 @@
 /**
  * Created by Home Laptop on 05-Jun-17.
  */
-var jwt = require('../auth/jwt');
-var security = require('../base/security');
+var jwt = require('../src/core/jwt');
+var security = require('../src/core/security');
 
 var Schema = db.Schema;
 var ObjectId = Schema.ObjectId;
@@ -22,7 +22,7 @@ ErrorCode = {
 var UserSchema = Schema({
     UserId : ObjectId,
     Username : { type : String, required : true, unique : true, index : true },
-    Password : { type : String, minLength : 8, maxLength : 16, set : Password },
+    Password : { type : String, required : true, minLength : 8, maxLength : 16, set : Password },
     FirstName : { type : String, required : true },
     MiddleName : String,
     LastName : String,
@@ -70,6 +70,11 @@ UserSchema.methods.compareHashPassword = function (password, callback) {
     }
 };
 
+/**
+ * Sign Up the User
+ * Token on Success
+ * Throws RegistrationFailed, UserAlreadyExists
+ * */
 UserSchema.methods.Register = function (callback) {
     var user = this;
     
@@ -107,6 +112,11 @@ UserSchema.methods.Register = function (callback) {
 
 var User = db.model('User', UserSchema);
 
+/**
+ * Authenticate User based on Token
+ * Sets UserId on Success
+ * Throws InternalError, Authentication Failed
+ **/
 User.Authenticate = function (token, callback) {
     User.findOne({ Tokens : token }, '_id', function (err, user) {
         if (err) {
@@ -119,8 +129,13 @@ User.Authenticate = function (token, callback) {
     })
 };
 
+/**
+ *Login the User
+ * Returns Token on Success
+ * Returns Error InternalError, UserDoesNotExists, InvalidPassword
+ **/
 User.Login = function (username, password, callback) {
-    User.findOne({ Username : username }, { Password : 1, Tokens : 1 }, function (err, user) {
+    User.findOne({ Username : username }, { Password : 1, Tokens : 1, CreatedAt : 1 }, function (err, user) {
         if (err) {
             console.log(err);
             callback(ErrorCode.InternalError);
@@ -167,8 +182,13 @@ User.Login = function (username, password, callback) {
     });
 };
 
+/**
+ * Logout the user
+ * True on Success
+ * ThrowsInternal Error, InvalidRequest
+ */
 User.Logout = function (Token, callback) {
-    User.findOne({ Tokens : Token }, { Tokens : 1 }, function (err, user) {
+    User.findOne({ Tokens : Token }, { Tokens : 1, CreatedAt : 1 }, function (err, user) {
         if (err) {
             callback(ErrorCode.InternalError);
             return;

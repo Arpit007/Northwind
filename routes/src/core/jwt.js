@@ -1,7 +1,7 @@
 /**
  * Created by Home Laptop on 04-Jun-17.
  */
-var security = require('../base/security');
+var security = require('./security');
 
 var getToken = function(payload)
 {
