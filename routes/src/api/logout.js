@@ -3,8 +3,8 @@ var router = express.Router();
 
 var user = require('../../model/user');
 
-router.post('/*',function (req, res) {
-    var Token = readToken(req, pubConfig.TokenTag);
+router.all('/*',function (req, res) {
+    var Token = req.Token;
     if(!Token){
         handleError(user.ErrorCode.InvalidRequest, res);
         return;
@@ -14,6 +14,9 @@ router.post('/*',function (req, res) {
             handleError(err,res);
             return;
         }
+        
+        delete req.cookies[pubConfig.TokenTag];
+        
         res.writeHead(statusCodes.Ok, {'Content-Type' : 'text/json'});
         res.end(JSON.stringify({Code : statusCodes.Ok , Message : 'Success'}));
     })
@@ -28,22 +31,6 @@ function handleError(err, res) {
         res.writeHead(statusCodes.BadRequest, { 'Content-Type' : 'text/json' });
         res.end(JSON.stringify({ Code : statusCodes.BadRequest, Message : 'Internal Error' }));
     }
-}
-
-function readToken(req, name) {
-    if (req.headers[name]){
-        return req.headers[name];
-    }
-    else if (req.cookies[name]) {
-        return req.cookies[ name ];
-    }
-    else if (req.query[name]) {
-        return req.query[ name ];
-    }
-    else if (req.body[name]) {
-        return req.body[ name ];
-    }
-    return null;
 }
 
 module.exports = router;

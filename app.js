@@ -5,6 +5,7 @@ var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 
+var gateway = require('./routes/src/core/gateway');
 var api = require('./routes/src/api');
 var web = require('./routes/src/web');
 
@@ -20,7 +21,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use(function (req, res, next) {
+app.use(gateway, function (req, res, next) {
     req.jsonResponse = !!(req.headers['content-type'] && req.headers['content-type'] == 'application/json');
     next();
 });

@@ -1,0 +1,24 @@
+extends layout
+
+block content
+    h1 Sign Up!
+    p Welcome to #{appName}
+    br
+    br
+    form(method='POST' action='/signup/auth')
+        b Username &emsp;
+        input(type='text' name='UserName')
+        br
+        b Password &emsp;
+        input(type='password' name='Password')
+        br
+        b First Name &emsp;
+        input(type='text' name='FirstName')
+        br
+        b Middle Name &emsp;
+        input(type='text' name='MiddleName')
+        br
+        b Last Name &emsp;
+        input(type='text' name='LastName')
+        br
+        input(type='Submit' title='Submit')

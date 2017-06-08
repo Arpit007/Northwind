@@ -1,8 +1,30 @@
 /**
- * Created by Home Laptop on 07-Jun-17.
+ * Created by Home Laptop on 03-Jun-17.
  */
-var express = require('express');
-var router = express.Router();
 
+function auth(req, res, next) {
+    if(req.UserId){
+        next();
+    }
+    else {
+        res.redirect('/login');
+    }
+}
 
-module.exports = router;
+function adminAuth(req, res, next) {
+    if(req.UserId){
+        if (req.IsAdmin){
+            next();
+        }
+        else {
+            res.render('errorMessage', {Message : 'Unauthorized, Login as Admin'});
+        }
+    }
+    else {
+        req.body.Redirect = req.url;
+        res.redirect('/login');
+    }
+}
+
+module.exports.auth = auth;
+module.exports.adminAuth = adminAuth;
