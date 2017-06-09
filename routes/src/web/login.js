@@ -34,13 +34,21 @@ router.post('/auth',function (req, res) {
         res.render('errorMessage', {Message : 'Invalid Password Length'});
         return;
     }
-    user.Login(UserName, Password, function (err, Token) {
+    user.Login(UserName, Password, function (err, Token, ID) {
         if (err){
             handleError(err, res);
         }
         else {
-            res.cookie(pubConfig.TokenTag, Token);
-            res.redirect('/');
+            var ip = req.headers['x-forwarded-for'] ||
+                req.connection.remoteAddress ||
+                req.socket.remoteAddress ||
+                req.connection.socket.remoteAddress;
+    
+            memcached.set(Token,{UserId : ID, host : ip}, maxConcurrentSession, function (err) {
+                if (err)    console.log(err);
+                res.cookie(pubConfig.TokenTag, Token);
+                res.redirect('/');
+            });
         }
     });
 });

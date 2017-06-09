@@ -8,14 +8,13 @@ router.all('/*',function (req, res) {
         res.redirect('/');
         return;
     }
-    user.Logout(Token, function (err, Success) {
-        if (err){
-            res.render('errorMessage', {Message : 'Internal Error'});
-        }
-        else {
-            delete req.cookies[ pubConfig.TokenTag ];
+    user.Logout(req.Token, function (err, Success) {
+        memcached.del(req.Token,function (err) {
+            if (err)    console.log(err);
+            
+            res.clearCookie(pubConfig.TokenTag);
             res.redirect('/');
-        }
+        });
     })
 });
 

@@ -97,7 +97,7 @@ UserSchema.methods.Register = function (callback) {
                             console.log(err);
                             callback(ErrorCode.RegistrationFailed);
                         }
-                        callback(null, Token);
+                        callback(null, Token, user._id);
                     });
                 }
                 catch (e) {
@@ -168,7 +168,7 @@ User.Login = function (username, password, callback) {
                             callback(ErrorCode.InternalError);
                             return;
                         }
-                        callback(null, Token);
+                        callback(null, Token, user._id);
                     });
                 }
                 catch (e) {

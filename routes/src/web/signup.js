@@ -52,13 +52,21 @@ router.post('/auth', function (req, res) {
         LastName : LastName,
         IsAdmin : IsAdmin
     });
-    SignUp.Register(function (err, Token) {
+    SignUp.Register(function (err, Token, ID) {
         if (err){
             handleError(err, res);
             return;
         }
-        res.cookie(pubConfig.TokenTag, Token);
-        res.redirect('/');
+        var ip = req.headers['x-forwarded-for'] ||
+            req.connection.remoteAddress ||
+            req.socket.remoteAddress ||
+            req.connection.socket.remoteAddress;
+    
+        memcached.set(Token,{UserId : ID, host : ip}, maxConcurrentSession, function (err) {
+            if (err)    console.log(err);
+            res.cookie(pubConfig.TokenTag, Token);
+            res.redirect('/');
+        });
     });
 });
 

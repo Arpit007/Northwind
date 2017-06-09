@@ -39,13 +39,22 @@ router.post('/*', function (req, res) {
         LastName : LastName,
         IsAdmin : IsAdmin
     });
-    SignUp.Register(function (err, Token) {
+    SignUp.Register(function (err, Token, ID) {
         if (err){
             handleError(err, res);
             return;
         }
-        res.writeHead(statusCodes.Ok, {'Content-Type' : 'text/json'});
-        res.end(JSON.stringify({Code : statusCodes.Ok , Message : 'Success', Token : Token}));
+        
+        var ip = req.headers['x-forwarded-for'] ||
+            req.connection.remoteAddress ||
+            req.socket.remoteAddress ||
+            req.connection.socket.remoteAddress;
+        
+        memcached.set(Token,{UserId : ID, host : ip}, maxConcurrentSession, function (err) {
+            if (err)    console.log(err);
+            res.writeHead(statusCodes.Ok, {'Content-Type' : 'text/json'});
+            res.end(JSON.stringify({Code : statusCodes.Ok , Message : 'Success', Token : Token}));
+        });
     });
 });
 

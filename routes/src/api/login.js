@@ -24,13 +24,21 @@ router.post('/*',function (req, res) {
         writeErrorMessage('Invalid Password Length', res);
         return;
     }
-    user.Login(UserName, Password, function (err, Token) {
+    user.Login(UserName, Password, function (err, Token, ID) {
         if (err){
             handleError(err, res);
         }
         else {
-            res.writeHead(statusCodes.Ok, {'Content-Type' : 'text/json'});
-            res.end(JSON.stringify({Code : statusCodes.Ok , Message : 'Success', Token : Token}));
+            var ip = req.headers['x-forwarded-for'] ||
+                req.connection.remoteAddress ||
+                req.socket.remoteAddress ||
+                req.connection.socket.remoteAddress;
+    
+            memcached.set(Token,{UserId : ID, host : ip}, maxConcurrentSession, function (err) {
+                if (err)    console.log(err);
+                res.writeHead(statusCodes.Ok, {'Content-Type' : 'text/json'});
+                res.end(JSON.stringify({Code : statusCodes.Ok , Message : 'Success', Token : Token}));
+            });
         }
     });
 });

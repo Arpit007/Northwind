@@ -8,6 +8,7 @@ var bodyParser = require('body-parser');
 var gateway = require('./routes/src/core/gateway');
 var api = require('./routes/src/api');
 var web = require('./routes/src/web');
+var gen = require('./routes/src/gen');
 
 var app = express();
 app.locals.appName = pubConfig.appName;
@@ -20,6 +21,8 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+
+app.use('/gen', gen);
 
 app.use(gateway, function (req, res, next) {
     req.jsonResponse = !!(req.headers['content-type'] && req.headers['content-type'] == 'application/json');

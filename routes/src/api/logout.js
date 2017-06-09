@@ -10,15 +10,18 @@ router.all('/*',function (req, res) {
         return;
     }
     user.Logout(Token, function (err, Success) {
-        if (err){
+        if (err != user.ErrorCode.InvalidRequest){
             handleError(err,res);
             return;
         }
-        
-        delete req.cookies[pubConfig.TokenTag];
-        
-        res.writeHead(statusCodes.Ok, {'Content-Type' : 'text/json'});
-        res.end(JSON.stringify({Code : statusCodes.Ok , Message : 'Success'}));
+    
+        memcached.del(req.Token,function (err) {
+            if (err)    console.log(err);
+            
+            res.clearCookie(pubConfig.TokenTag);
+            res.writeHead(statusCodes.Ok, {'Content-Type' : 'text/json'});
+            res.end(JSON.stringify({Code : statusCodes.Ok , Message : 'Success'}));
+        });
     })
 });
 
