@@ -1,6 +1,8 @@
 /**
  * Created by Home Laptop on 04-Jun-17.
  */
+'use strict';
+
 var security = require('./security');
 
 var getToken = function(payload)

@@ -1,6 +1,7 @@
 /**
  * Created by Home Laptop on 03-Jun-17.
  */
+'use strict';
 
 function auth(req, res, next) {
     if(req.UserId){

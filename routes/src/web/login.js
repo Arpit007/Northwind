@@ -1,6 +1,8 @@
 /**
  * Created by Home Laptop on 08-Jun-17.
  */
+'use strict';
+
 var express = require('express');
 var router = express.Router();
 
@@ -8,7 +10,9 @@ var user = require('../../model/user');
 
 router.all('/',function (req, res) {
     if (req.Token){
-        res.redirect('/');
+        if (req.query.redirect)
+            res.redirect(req.query.redirect);
+        else res.redirect('/');
         return;
     }
     res.render('login')
@@ -17,7 +21,9 @@ router.all('/',function (req, res) {
 
 router.post('/auth',function (req, res) {
     if (req.Token){
-        res.redirect('/');
+        if (req.query.redirect)
+            res.redirect(req.query.redirect);
+        else res.redirect('/');
         return;
     }
     var UserName = req.body.UserName;
@@ -39,22 +45,21 @@ router.post('/auth',function (req, res) {
             handleError(err, res);
         }
         else {
-            var ip = req.headers['x-forwarded-for'] ||
-                req.connection.remoteAddress ||
-                req.socket.remoteAddress ||
-                req.connection.socket.remoteAddress;
-    
-            memcached.set(Token,{UserId : ID, host : ip}, maxConcurrentSession, function (err) {
-                if (err)    console.log(err);
+            memCached.set(Token,{UserId : ID, host : clientIP(req)}, maxConcurrentSession, function (err) {
+                if (err)
+                    console.log(err);
+                
                 res.cookie(pubConfig.TokenTag, Token);
-                res.redirect('/');
+                if (req.query.redirect)
+                    res.redirect(req.query.redirect);
+                else res.redirect('/');
             });
         }
     });
 });
 
 function handleError(err, res) {
-    if (err == user.ErrorCode.UserDoesNotExists || err == user.ErrorCode.InvalidPassword){
+    if (err === user.ErrorCode.UserDoesNotExists || err === user.ErrorCode.InvalidPassword){
         res.render('errorMessage', {Message : 'User/Password do not match'});
     }
     else {

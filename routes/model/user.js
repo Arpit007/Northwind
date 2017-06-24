@@ -1,14 +1,16 @@
 /**
  * Created by Home Laptop on 05-Jun-17.
  */
-var jwt = require('../src/core/jwt');
+'use strict';
+
+var nwt = require('../src/core/nwt');
 var security = require('../src/core/security');
 
-var Schema = db.Schema;
+var Schema = mDb.Schema;
 var ObjectId = Schema.ObjectId;
 
 
-ErrorCode = {
+var ErrorCode = {
     UserAlreadyExists : 'User Already Exists',
     InvalidRequest : 'Invalid Request',
     RegistrationFailed : 'Registration Failed',
@@ -22,7 +24,10 @@ ErrorCode = {
 var UserSchema = Schema({
     UserId : ObjectId,
     Username : { type : String, required : true, unique : true, index : true },
-    Password : { type : String, required : true, minLength : 8, maxLength : 16, set : Password },
+    Password : {
+        type : String, required : true, minLength : pubConfig.MinPasswordLength,
+        maxLength : pubConfig.MaxPasswordLength, set : Password
+    },
     FirstName : { type : String, required : true },
     MiddleName : String,
     LastName : String,
@@ -51,23 +56,21 @@ UserSchema.pre('save', function (next) {
     next();
 });
 
-UserSchema.methods.compareHashPassword = function (password, callback) {
-    try {
-        var intermediate = security.decrypt(this.Password, security.Pass2Algo, pvtConfig.TokenKey);
-        var index = intermediate.length - pvtConfig.TokenSaltLength;
-        var pass = intermediate.substr(0, index);
-        var salt = intermediate.substr(index);
-        var tempPass = security.encrypt(password, security.Pass1Algo, salt);
-        if (pass == tempPass) {
-            callback(null, true);
-        }
-        else {
-            callback(null, false);
-        }
-    }
-    catch (e) {
-        callback(ErrorCode.InternalError);
-    }
+UserSchema.methods.compareHashPassword = function (password) {
+    var _user = this;
+    return createPromise()
+        .then(function () {
+            var intermediate = security.decrypt(_user.Password, security.Pass2Algo, pvtConfig.TokenKey);
+            var index = intermediate.length - pvtConfig.TokenSaltLength;
+            var pass = intermediate.substr(0, index);
+            var salt = intermediate.substr(index);
+            var tempPass = security.encrypt(password, security.Pass1Algo, salt);
+            return (pass === tempPass);
+        })
+        .catch(function (e) {
+            console.log(e);
+            throw ErrorCode.InternalError;
+        });
 };
 
 /**
@@ -79,18 +82,18 @@ UserSchema.methods.Register = function (callback) {
     var user = this;
     
     User.find({ Username : this.Username }).count({}, function (err, count) {
-        if (count == 0) {
+        if (count === 0) {
             user.save(function (err) {
                 if (err) {
                     console.log(err);
                     callback(ErrorCode.RegistrationFailed);
                 }
                 
-                var payload = jwt.Payload();
+                var payload = nwt.Payload();
                 payload.auth = user.UserId;
                 
                 try {
-                    var Token = jwt.getToken(payload);
+                    var Token = nwt.getToken(payload);
                     user.Tokens.push(Token);
                     user.save(function (err) {
                         if (err) {
@@ -110,7 +113,7 @@ UserSchema.methods.Register = function (callback) {
     });
 };
 
-var User = db.model('User', UserSchema);
+var User = mDb.model('User', UserSchema);
 
 /**
  * Authenticate User based on Token
@@ -118,15 +121,17 @@ var User = db.model('User', UserSchema);
  * Throws InternalError, Authentication Failed
  **/
 User.Authenticate = function (token, callback) {
-    User.findOne({ Tokens : token }, '_id', function (err, user) {
-        if (err) {
+    User.findOne({ "Tokens" : token }, '_id')
+        .exec()
+        .then(function (user) {
+            console.log(user);
+            if (!user) {
+                callback(ErrorCode.AuthenticationFailed);
+            } else callback(null, user._id);
+        })
+        .catch(function (e) {
             callback(ErrorCode.InternalError);
-            return;
-        }
-        if (user == null) {
-            callback(ErrorCode.AuthenticationFailed);
-        } else callback(null, user._id);
-    })
+        });
 };
 
 /**
@@ -135,51 +140,41 @@ User.Authenticate = function (token, callback) {
  * Returns Error InternalError, UserDoesNotExists, InvalidPassword
  **/
 User.Login = function (username, password, callback) {
-    User.findOne({ Username : username }, { Password : 1, Tokens : 1, CreatedAt : 1 }, function (err, user) {
-        if (err) {
-            console.log(err);
-            callback(ErrorCode.InternalError);
-        }
-        if (user == null) {
-            callback(ErrorCode.UserDoesNotExists);
-            return;
-        }
-        
-        user.compareHashPassword(password, function (err, Valid) {
-            if (err) {
-                callback(err);
-                return;
+    User.findOne({ Username : username }, { Password : 1, Tokens : 1, CreatedAt : 1 })
+        .exec()
+        .then(function (user) {
+            if (!user) {
+                throw ErrorCode.UserDoesNotExists;
             }
-            if (Valid) {
-                try {
-                    var payload = jwt.Payload();
-                    payload.auth = user.UserId;
-                    var Token = jwt.getToken(payload);
-                    
-                    if (user.Tokens.length == pvtConfig.ConcurrentSessionCount) {
-                        user.Tokens.shift();
-                    }
-                    
-                    user.Tokens.push(Token);
-                    
-                    user.save(function (err) {
-                        if (err) {
-                            console.log(err);
-                            callback(ErrorCode.InternalError);
-                            return;
+            return user.compareHashPassword(password)
+                .then(function (Valid) {
+                    if (Valid) {
+                        var payload = nwt.Payload();
+                        payload.auth = user.UserId;
+                        var Token = nwt.getToken(payload);
+                        
+                        while (user.Tokens.length >= pvtConfig.ConcurrentSessionCount) {
+                            user.Tokens.shift();
                         }
-                        callback(null, Token, user._id);
-                    });
-                }
-                catch (e) {
-                    callback(ErrorCode.InternalError);
-                }
-            }
-            else {
-                callback(ErrorCode.InvalidPassword);
-            }
+                        
+                        user.Tokens.push(Token);
+                        
+                        return user.save()
+                            .then(function () {
+                                callback(null, Token, user._id);
+                            }).catch(function (e) {
+                                throw ErrorCode.InternalError;
+                            });
+                    }
+                    else {
+                        throw ErrorCode.InvalidPassword;
+                    }
+                })
+            
+        })
+        .catch(function (e) {
+            callback(e);
         });
-    });
 };
 
 /**
@@ -188,30 +183,29 @@ User.Login = function (username, password, callback) {
  * ThrowsInternal Error, InvalidRequest
  */
 User.Logout = function (Token, callback) {
-    User.findOne({ Tokens : Token }, { Tokens : 1, CreatedAt : 1 }, function (err, user) {
-        if (err) {
-            callback(ErrorCode.InternalError);
-            return;
-        }
-        if (user == null) {
-            callback(ErrorCode.InvalidRequest);
-        }
-        else {
-            try {
-                var Index = user.Tokens.indexOf(Token);
-                user.Tokens.splice(Index, 1);
-                user.save(function (err) {
-                    if (err) {
-                        callback(ErrorCode.InternalError);
-                    }
-                    else callback(null, true);
+    User.findOne({ Tokens : Token }, { Tokens : 1, CreatedAt : 1 })
+        .exec()
+        .then(function (user) {
+            if (!user)
+                throw ErrorCode.InvalidRequest;
+            
+            var Index = user.Tokens.indexOf(Token);
+            user.Tokens.splice(Index, 1);
+            
+            return user.save()
+                .then(function () {
+                    callback(null, true);
+                }).catch(function (e) {
+                    throw ErrorCode.InternalError;
                 });
-            }
-            catch (e) {
-                callback(ErrorCode.InternalError);
-            }
-        }
-    });
+            
+        }, function (err) {
+            if (err !== ErrorCode.InvalidRequest)
+                throw ErrorCode.InternalError;
+        })
+        .catch(function (e) {
+            callback(e);
+        });
 };
 
 User.DeleteAccount = function (userId, Password, callback) {
@@ -221,7 +215,7 @@ User.DeleteAccount = function (userId, Password, callback) {
                 callback(ErrorCode.InternalError);
                 return;
             }
-            if (user == null) {
+            if (!user) {
                 callback(ErrorCode.UserDoesNotExists);
                 return;
             }
@@ -243,7 +237,7 @@ User.DeleteAccount = function (userId, Password, callback) {
             });
         });
     }
-    catch (e){
+    catch (e) {
         callback(ErrorCode.InternalError);
     }
 };

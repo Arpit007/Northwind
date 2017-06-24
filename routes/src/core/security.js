@@ -1,21 +1,24 @@
 /**
  * Created by Home Laptop on 04-Jun-17.
  */
+'use strict';
+
 var crypto = require('crypto');
 var fs = require('fs');
 
 var Pass1Algo = "aes256";
 var Pass2Algo = "aes192";
+var PassIVAlgo = 'aes-256-ecb';
 
 var encryptiv = function (object, iv) {
     var IV = iv || "";
-    var cipher = crypto.createCipheriv('aes-256-ecb', pvtConfig.TokenKey,IV);
+    var cipher = crypto.createCipheriv(PassIVAlgo, pvtConfig.TokenKey, IV);
     return cipher.update(object, 'utf8', 'base64') + cipher.final('base64');
 };
 
 var decryptiv = function (object, iv) {
     var IV = iv || "";
-    var decipher = crypto.createDecipher('aes-256-ecb', pvtConfig.TokenKey,IV);
+    var decipher = crypto.createDecipheriv(PassIVAlgo, pvtConfig.TokenKey, IV);
     return decipher.update(object, 'base64', 'utf8') + decipher.final('utf8');
 };
 

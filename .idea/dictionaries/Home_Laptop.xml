@@ -2,8 +2,12 @@
   <dictionary name="Home Laptop">
     <words>
       <w>algo</w>
+      <w>crypto</w>
       <w>decryptiv</w>
       <w>encryptiv</w>
+      <w>mongo</w>
+      <w>northwind</w>
+      <w>signup</w>
     </words>
   </dictionary>
 </component>

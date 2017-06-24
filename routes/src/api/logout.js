@@ -1,3 +1,5 @@
+'use strict';
+
 var express = require('express');
 var router = express.Router();
 
@@ -10,29 +12,30 @@ router.all('/*',function (req, res) {
         return;
     }
     user.Logout(Token, function (err, Success) {
-        if (err != user.ErrorCode.InvalidRequest){
+        if (err !== user.ErrorCode.InvalidRequest){
             handleError(err,res);
             return;
         }
     
-        memcached.del(req.Token,function (err) {
-            if (err)    console.log(err);
+        memCached.del(req.Token,function (err) {
+            if (err)
+                console.log(err);
             
             res.clearCookie(pubConfig.TokenTag);
-            res.writeHead(statusCodes.Ok, {'Content-Type' : 'text/json'});
-            res.end(JSON.stringify({Code : statusCodes.Ok , Message : 'Success'}));
+            if (req.query.redirect)
+                res.redirect(req.query.redirect);
+            else
+                res.json({Code : statusCodes.Ok , Message : 'Success'});
         });
     })
 });
 
 function handleError(err, res) {
-    if (err == user.ErrorCode.InvalidRequest){
-        res.writeHead(statusCodes.BadRequest, { 'Content-Type' : 'text/json' });
-        res.end(JSON.stringify({ Code : statusCodes.BadRequest, Message : 'Invalid Request' }));
+    if (err === user.ErrorCode.InvalidRequest){
+        res.json({ Code : statusCodes.BadRequest, Message : 'Invalid Request' });
     }
     else {
-        res.writeHead(statusCodes.BadRequest, { 'Content-Type' : 'text/json' });
-        res.end(JSON.stringify({ Code : statusCodes.BadRequest, Message : 'Internal Error' }));
+        res.json({ Code : statusCodes.BadRequest, Message : 'Internal Error' });
     }
 }
 

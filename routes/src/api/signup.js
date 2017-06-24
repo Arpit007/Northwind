@@ -1,12 +1,43 @@
 /**
  * Created by Home Laptop on 07-Jun-17.
  */
+'use strict';
+
 var express = require('express');
 var router = express.Router();
 
 var user = require('../../model/user');
 
 router.post('/*', function (req, res) {
+    if (req.Token){
+        writeErrorMessage('Invalid Request', res);
+        return;
+    }
+    
+    var SignUp = SignUpUser(req, res);
+    
+    if (!SignUp)
+        return;
+    
+    SignUp.Register(function (err, Token, ID) {
+        if (err){
+            handleError(err, res);
+            return;
+        }
+        
+        memCached.set(Token,{UserId : ID, host : clientIP(req)}, maxConcurrentSession, function (err) {
+            if (err)
+                console.log(err);
+    
+            if (req.query.redirect)
+                res.redirect(req.query.redirect);
+            else res.json({Code : statusCodes.Ok , Message : 'Success', Token : Token});
+        });
+    });
+});
+
+//User Sign Up function
+function SignUpUser(req, res) {
     var UserName = req.body.UserName || '';
     var Password = req.body.Password || '';
     var FirstName = req.body.FirstName || '';
@@ -31,7 +62,7 @@ router.post('/*', function (req, res) {
         writeErrorMessage('First Name Required', res);
         return;
     }
-    var SignUp = new user({
+    return new user({
         Username : UserName,
         Password : Password,
         FirstName : FirstName,
@@ -39,39 +70,19 @@ router.post('/*', function (req, res) {
         LastName : LastName,
         IsAdmin : IsAdmin
     });
-    SignUp.Register(function (err, Token, ID) {
-        if (err){
-            handleError(err, res);
-            return;
-        }
-        
-        var ip = req.headers['x-forwarded-for'] ||
-            req.connection.remoteAddress ||
-            req.socket.remoteAddress ||
-            req.connection.socket.remoteAddress;
-        
-        memcached.set(Token,{UserId : ID, host : ip}, maxConcurrentSession, function (err) {
-            if (err)    console.log(err);
-            res.writeHead(statusCodes.Ok, {'Content-Type' : 'text/json'});
-            res.end(JSON.stringify({Code : statusCodes.Ok , Message : 'Success', Token : Token}));
-        });
-    });
-});
+}
 
 function handleError(err, res) {
-    if (err == user.ErrorCode.UserAlreadyExists){
-        res.writeHead(statusCodes.BadRequest, { 'Content-Type' : 'text/json' });
-        res.end(JSON.stringify({ Code : statusCodes.BadRequest, Message : 'User Already Exists' }));
+    if (err === user.ErrorCode.UserAlreadyExists){
+        res.json({ Code : statusCodes.BadRequest, Message : 'User Already Exists' });
     }
     else {
-        res.writeHead(statusCodes.BadRequest, { 'Content-Type' : 'text/json' });
-        res.end(JSON.stringify({ Code : statusCodes.BadRequest, Message : 'Registration Failed' }));
+        res.json({ Code : statusCodes.BadRequest, Message : 'Registration Failed' });
     }
 }
 
 function writeErrorMessage(Message, res) {
-    res.writeHead(statusCodes.BadRequest, { 'Content-Type' : 'text/json' });
-    res.end(JSON.stringify({ Code : statusCodes.BadRequest, Message : Message }));
+    res.json({ Code : statusCodes.BadRequest, Message : Message });
 }
 
 module.exports = router;

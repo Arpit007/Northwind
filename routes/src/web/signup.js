@@ -1,6 +1,8 @@
 /**
  * Created by Home Laptop on 07-Jun-17.
  */
+'use strict';
+
 var express = require('express');
 var router = express.Router();
 
@@ -8,7 +10,9 @@ var user = require('../../model/user');
 
 router.all('/',function (req, res) {
     if (req.Token){
-     res.redirect('/');
+        if (req.query.redirect)
+            res.redirect(req.query.redirect);
+        else res.redirect('/');
      return;
     }
     res.render('signup')
@@ -16,10 +20,35 @@ router.all('/',function (req, res) {
 
 router.post('/auth', function (req, res) {
     if (req.Token){
-        res.redirect('/');
+        if (req.query.redirect)
+            res.redirect(req.query.redirect);
+        else res.redirect('/');
         return;
     }
     
+    var SignUp = SignUpUser(req, res);
+    
+    if (!SignUp)
+        return;
+    
+    SignUp.Register(function (err, Token, ID) {
+        if (err){
+            handleError(err, res);
+            return;
+        }
+        
+        memCached.set(Token,{UserId : ID, host : clientIP(req)}, maxConcurrentSession, function (err) {
+            if (err)    console.log(err);
+            res.cookie(pubConfig.TokenTag, Token);
+            if (req.query.redirect)
+                res.redirect(req.query.redirect);
+            else res.redirect('/');
+        });
+    });
+});
+
+//User Sign Up function
+function SignUpUser(req, res) {
     var UserName = req.body.UserName || '';
     var Password = req.body.Password || '';
     var FirstName = req.body.FirstName || '';
@@ -44,7 +73,7 @@ router.post('/auth', function (req, res) {
         writeErrorMessage('First Name Required', res);
         return;
     }
-    var SignUp = new user({
+    return new user({
         Username : UserName,
         Password : Password,
         FirstName : FirstName,
@@ -52,30 +81,15 @@ router.post('/auth', function (req, res) {
         LastName : LastName,
         IsAdmin : IsAdmin
     });
-    SignUp.Register(function (err, Token, ID) {
-        if (err){
-            handleError(err, res);
-            return;
-        }
-        var ip = req.headers['x-forwarded-for'] ||
-            req.connection.remoteAddress ||
-            req.socket.remoteAddress ||
-            req.connection.socket.remoteAddress;
-    
-        memcached.set(Token,{UserId : ID, host : ip}, maxConcurrentSession, function (err) {
-            if (err)    console.log(err);
-            res.cookie(pubConfig.TokenTag, Token);
-            res.redirect('/');
-        });
-    });
-});
+}
 
 function handleError(err, res) {
-    if (err == user.ErrorCode.UserAlreadyExists){
+    if (err === user.ErrorCode.UserAlreadyExists){
         res.render('errorMessage', {Message : 'User Already Exists'});
     }
     else {
         res.render('errorMessage', {Message : 'Registration Failed'});
     }
 }
+
 module.exports = router;

@@ -1,6 +1,8 @@
 /**
  * Created by Home Laptop on 03-Jun-17.
  */
+'use strict';
+
 var express = require('express');
 var router = express.Router();
 
@@ -10,41 +12,35 @@ var user = require('../../model/user');
 function Gateway(req, res, next) {
     var Token = readToken(req, pubConfig.TokenTag);
     if (Token) {
-        memcached.get(Token, function (err, data) {
+        memCached.get(Token, function (err, data) {
             if (err) {
                 console.log(err);
             }
-            var ip = req.headers['x-forwarded-for'] ||
-                req.connection.remoteAddress ||
-                req.socket.remoteAddress ||
-                req.connection.socket.remoteAddress;
+            var ip = clientIP(req);
             
-            function regularAuth() {
-                user.Authenticate(Token,function (err, ID) {
-                    if (err){
+            if (data && data.host === ip) {
+                req.Token = Token;
+                req.UserId = data.UserId;
+                next();
+            }
+            else {
+                user.Authenticate(Token, function (err, ID) {
+                    if (err) {
                         res.clearCookie(pubConfig.TokenTag);
-                        delete req.headers[pubConfig.TokenTag];
+                        delete req.headers[ pubConfig.TokenTag ];
                         req.UserId = null;
                         next();
                     }
                     else {
                         req.UserId = ID.toString();
                         req.Token = Token;
-                        memcached.set(Token,{UserId : req.UserId, host : ip}, maxConcurrentSession, function (err) {
-                            console.log(err);
+                        memCached.set(Token, { UserId : req.UserId, host : ip }, maxConcurrentSession, function (err) {
+                            if (err)
+                                console.log(err);
                             next();
                         });
                     }
                 });
-            }
-            
-            if (data && data.host == ip) {
-                req.Token = Token;
-                req.UserId = data.UserId;
-                next();
-            }
-            else {
-                regularAuth();
             }
         });
     }

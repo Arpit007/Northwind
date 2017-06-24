@@ -1,6 +1,7 @@
 /**
  * Created by Home Laptop on 04-Jun-17.
  */
+'use strict';
 
 var statusCodes ={
     Ok : 200,

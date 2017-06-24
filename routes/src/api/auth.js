@@ -1,6 +1,7 @@
 /**
  * Created by Home Laptop on 03-Jun-17.
  */
+'use strict';
 
 function auth(req, res, next) {
     if(req.UserId){
@@ -26,15 +27,11 @@ function adminAuth(req, res, next) {
 }
 
 function writeLogin(res) {
-    var Response = {Code: statusCodes.Unauthorized, Message: 'Login Required'};
-    res.writeHead(statusCodes.Unauthorized,{'Content-Type':'text/json'});
-    res.end(JSON.stringify(Response));
+    res.json({Code: statusCodes.Unauthorized, Message: 'Login Required'});
 }
 
 function writeUnauthorized(res) {
-    var Response = {Code: statusCodes.Unauthorized, Message: 'Unauthorized, Please Login'};
-    res.writeHead(statusCodes.Unauthorized,{'Content-Type':'text/json'});
-    res.end(JSON.stringify(Response));
+    res.json({Code: statusCodes.Unauthorized, Message: 'Unauthorized, Please Login'});
 }
 
 module.exports.auth = auth;
