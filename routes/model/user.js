@@ -9,18 +9,6 @@ var security = require('../src/core/security');
 var Schema = mDb.Schema;
 var ObjectId = Schema.ObjectId;
 
-
-var ErrorCode = {
-    UserAlreadyExists : 'User Already Exists',
-    InvalidRequest : 'Invalid Request',
-    RegistrationFailed : 'Registration Failed',
-    InvalidPasswordLength : 'Invalid Password Length',
-    UserDoesNotExists : 'User Does Not Exists',
-    InvalidPassword : 'Invalid Password',
-    InternalError : 'Internal Server Error',
-    AuthenticationFailed : 'Authentication Failed'
-};
-
 var UserSchema = Schema({
     UserId : ObjectId,
     Username : { type : String, required : true, unique : true, index : true },
@@ -81,36 +69,42 @@ UserSchema.methods.compareHashPassword = function (password) {
 UserSchema.methods.Register = function (callback) {
     var user = this;
     
-    User.find({ Username : this.Username }).count({}, function (err, count) {
-        if (count === 0) {
-            user.save(function (err) {
-                if (err) {
-                    console.log(err);
-                    callback(ErrorCode.RegistrationFailed);
-                }
-                
-                var payload = nwt.Payload();
-                payload.auth = user.UserId;
-                
-                try {
-                    var Token = nwt.getToken(payload);
-                    user.Tokens.push(Token);
-                    user.save(function (err) {
-                        if (err) {
-                            console.log(err);
-                            callback(ErrorCode.RegistrationFailed);
-                        }
-                        callback(null, Token, user._id);
+    User.find({ Username : this.Username })
+        .count({})
+        .exec()
+        .then(function (count) {
+            if (count === 0) {
+                return user.save()
+                    .then(function () {
+                        var payload = nwt.Payload();
+                        payload.auth = user.UserId;
+                        
+                        var Token = nwt.getToken(payload);
+                        user.Tokens.push(Token);
+                        
+                        return user.save()
+                            .then(function () {
+                                callback(null, Token, user._id);
+                            })
+                            .catch(function (e) {
+                                console.log(e);
+                                throw ErrorCode.RegistrationFailed;
+                            });
+                    })
+                    .catch(function (e) {
+                        console.log(e);
+                        throw ErrorCode.RegistrationFailed;
                     });
-                }
-                catch (e) {
-                    console.log(e);
-                    callback(ErrorCode.RegistrationFailed);
-                }
-            });
-        }
-        else callback(ErrorCode.UserAlreadyExists);
-    });
+            }
+            else
+                throw ErrorCode.UserAlreadyExists;
+        }, function (e) {
+            console.log(e);
+            throw ErrorCode.InternalError;
+        })
+        .catch(function (e) {
+            callback(e);
+        });
 };
 
 var User = mDb.model('User', UserSchema);
@@ -124,13 +118,15 @@ User.Authenticate = function (token, callback) {
     User.findOne({ "Tokens" : token }, '_id')
         .exec()
         .then(function (user) {
-            console.log(user);
-            if (!user) {
-                callback(ErrorCode.AuthenticationFailed);
-            } else callback(null, user._id);
+            if (!user)
+                throw ErrorCode.AuthenticationFailed;
+            else callback(null, user._id);
+        }, function (e) {
+            console.log(e);
+            throw ErrorCode.InternalError;
         })
         .catch(function (e) {
-            callback(ErrorCode.InternalError);
+            callback(e);
         });
 };
 
@@ -163,14 +159,18 @@ User.Login = function (username, password, callback) {
                             .then(function () {
                                 callback(null, Token, user._id);
                             }).catch(function (e) {
+                                console.log(e);
                                 throw ErrorCode.InternalError;
                             });
                     }
                     else {
                         throw ErrorCode.InvalidPassword;
                     }
-                })
+                });
             
+        }, function (e) {
+            console.log(e);
+            throw ErrorCode.InternalError;
         })
         .catch(function (e) {
             callback(e);
@@ -180,7 +180,7 @@ User.Login = function (username, password, callback) {
 /**
  * Logout the user
  * True on Success
- * ThrowsInternal Error, InvalidRequest
+ * Throws InternalError, InvalidRequest
  */
 User.Logout = function (Token, callback) {
     User.findOne({ Tokens : Token }, { Tokens : 1, CreatedAt : 1 })
@@ -196,52 +196,147 @@ User.Logout = function (Token, callback) {
                 .then(function () {
                     callback(null, true);
                 }).catch(function (e) {
+                    console.log(e);
                     throw ErrorCode.InternalError;
                 });
             
         }, function (err) {
-            if (err !== ErrorCode.InvalidRequest)
-                throw ErrorCode.InternalError;
+            console.log(err);
+            throw ErrorCode.InternalError;
         })
         .catch(function (e) {
             callback(e);
         });
 };
 
+/**
+ * Delete the Account
+ * True on Success
+ * Throws InternalError, UserDoesNotExists, InvalidPassword
+ */
 User.DeleteAccount = function (userId, Password, callback) {
-    try {
-        User.findOne({ UserId : ObjectId(userId) }, { Password : 1 }, function (err, user) {
-            if (err) {
-                callback(ErrorCode.InternalError);
-                return;
-            }
-            if (!user) {
-                callback(ErrorCode.UserDoesNotExists);
-                return;
-            }
-            user.compareHashPassword(Password, function (err, Valid) {
-                if (err) {
-                    callback(err);
-                    return;
-                }
-                if (Valid) {
-                    user.remove(function (err) {
-                        if (err) {
-                            callback(ErrorCode.InternalError);
-                        } else callback(null, true);
-                    });
-                }
-                else {
-                    callback(ErrorCode.InvalidPassword);
-                }
-            });
+    User.findById(userId, { Password : 1 })
+        .exec()
+        .then(function (user) {
+            if (!user)
+                throw ErrorCode.UserDoesNotExists;
+            
+            return user.compareHashPassword(Password)
+                .then(function (Valid) {
+                    if (Valid) {
+                        return user.remove()
+                            .then(function () {
+                                callback(null, true)
+                            })
+                            .catch(function (e) {
+                                console.log(e);
+                                throw ErrorCode.InternalError;
+                            });
+                    }
+                    else {
+                        throw ErrorCode.InvalidPassword;
+                    }
+                });
+            
+        }, function (e) {
+            console.log(e);
+            throw ErrorCode.InternalError;
+        })
+        .catch(function (e) {
+            callback(e);
         });
-    }
-    catch (e) {
-        callback(ErrorCode.InternalError);
-    }
 };
 
-module.exports = User;
+/**
+ * Change Account Password
+ * True on Success, Redundant Tokens
+ * Do Remove Tokens from Store, if Signing out others
+ * Throws InternalError, UserDoesNotExists, InvalidPassword
+ */
+User.ChangePassword = function (Token, userId, oldPassword, newPassword, signOutOthers, callback) {
+    User.findById(userId, { Password : 1, Tokens : 1 })
+        .exec()
+        .then(function (user) {
+            if (!user)
+                throw ErrorCode.UserDoesNotExists;
+            
+            return user.compareHashPassword(oldPassword)
+                .then(function (Valid) {
+                    if (Valid) {
+                        user.Password = newPassword;
+                        
+                        var Redundant = null;
+                        
+                        if (signOutOthers) {
+                            user.Tokens.splice(user.Tokens.indexOf(Token), 1);
+                            Redundant = [];
+                            user.Tokens.forEach(function (_token) {
+                                Redundant.push(_token);
+                            });
+                            user.Tokens = [ Token ];
+                        }
+                        
+                        return user.save()
+                            .then(function () {
+                                
+                                callback(null, true, Redundant);
+                            }).catch(function (e) {
+                                console.log(e);
+                                throw ErrorCode.InternalError;
+                            });
+                    }
+                    else {
+                        throw ErrorCode.InvalidPassword;
+                    }
+                });
+            
+        }, function (e) {
+            console.log(e);
+            throw ErrorCode.InternalError;
+        })
+        .catch(function (e) {
+            callback(e);
+        });
+};
 
-User.ErrorCode = ErrorCode;
+/**
+ * Reset Account Password
+ * True on Success, Signs Out All, Returns redundant Tokens
+ * Do Remove Tokens from Store
+ * Throws InternalError
+ */
+User.ResetPassword = function (userId, newPassword, callback) {
+    User.findById(userId, { Password : 1, Tokens : 1 })
+        .exec()
+        .then(function (user) {
+            if (!user)
+                throw ErrorCode.UserDoesNotExists;
+            
+            user.Password = newPassword;
+            
+            var Redundant = [];
+            user.Tokens.forEach(function (_token) {
+                Redundant.push(_token);
+            });
+            
+            user.Tokens = [];
+            
+            return user.save()
+                .then(function () {
+                    callback(null, true, Redundant);
+                }).catch(function (e) {
+                    console.log(e);
+                    throw ErrorCode.InternalError;
+                });
+            
+        }, function (e) {
+            console.log(e);
+            throw ErrorCode.InternalError;
+        })
+        .catch(function (e) {
+            callback(e);
+        });
+};
+
+
+module.exports = User;

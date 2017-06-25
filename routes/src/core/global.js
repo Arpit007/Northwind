@@ -16,6 +16,15 @@ global.clientIP = function (req) {
         req.connection.socket['remoteAddress'];
 };
 
+function checkDebugEnvironment() {
+    if (process.env['NODE_ENV'])
+        return (process.env['NODE_ENV'] === 'development');
+    return true;
+}
+
+global.DebugMode = checkDebugEnvironment();
+global.ReleaseMode = !DebugMode;
 global.pvtConfig = require('../../config/pvtConfig');
 global.pubConfig = require('../../config/pubConfig');
 global.statusCodes = require('./statusCodes');
+global.ErrorCode = require('../../model/ErrorCode');

@@ -13,7 +13,7 @@ router.post('/*',function (req, res) {
         if (req.query.redirect)
             res.redirect(req.query.redirect);
         else
-            res.json({Code : statusCodes.Ok , Message : 'Success', Token : Token});
+            res.json({Code : statusCodes.Ok , Message : 'Success', Token : req.Token});
         return;
     }
     
@@ -54,7 +54,7 @@ function writeErrorMessage(Message, res) {
 }
 
 function handleError(err, res) {
-    if (err === user.ErrorCode.UserDoesNotExists || err === user.ErrorCode.InvalidPassword){
+    if (err === ErrorCode.UserDoesNotExists || err === ErrorCode.InvalidPassword){
         res.json({Code : statusCodes.BadRequest , Message : 'User/Password do not match'});
     }
     else {

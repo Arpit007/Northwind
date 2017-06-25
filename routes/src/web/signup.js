@@ -83,8 +83,12 @@ function SignUpUser(req, res) {
     });
 }
 
+function writeErrorMessage(err, res) {
+    res.render('errorMessage', {Message : err});
+}
+
 function handleError(err, res) {
-    if (err === user.ErrorCode.UserAlreadyExists){
+    if (err === ErrorCode.UserAlreadyExists){
         res.render('errorMessage', {Message : 'User Already Exists'});
     }
     else {

@@ -8,11 +8,11 @@ var user = require('../../model/user');
 router.all('/*',function (req, res) {
     var Token = req.Token;
     if(!Token){
-        handleError(user.ErrorCode.InvalidRequest, res);
+        handleError(ErrorCode.InvalidRequest, res);
         return;
     }
     user.Logout(Token, function (err, Success) {
-        if (err !== user.ErrorCode.InvalidRequest){
+        if (err !== ErrorCode.InvalidRequest){
             handleError(err,res);
             return;
         }
@@ -31,7 +31,7 @@ router.all('/*',function (req, res) {
 });
 
 function handleError(err, res) {
-    if (err === user.ErrorCode.InvalidRequest){
+    if (err === ErrorCode.InvalidRequest){
         res.json({ Code : statusCodes.BadRequest, Message : 'Invalid Request' });
     }
     else {

@@ -5,6 +5,9 @@
 
 var security = require('./security');
 
+/**
+* Northwind Web Token
+* */
 var getToken = function(payload)
 {
     payload = payload || {};
@@ -42,20 +45,20 @@ var Payload = function () {
 };
 
 /**
- * Get Payload From Jwt.Token
+ * Get Payload From Nwt.Token
  * Empty Payload on Error
  * May return error
  **/
 module.exports.getToken = getToken;
 
 /**
- * Get Token on Encrypting Jwt.Payload
+ * Get Token on Encrypting Nwt.Payload
  * May return null
  * May Throw Error
  **/
 module.exports.getPayload = getPayload;
 
 /**
- * Custom Jwt Payload
+ * Custom Nwt Payload
  * */
 module.exports.Payload = Payload;

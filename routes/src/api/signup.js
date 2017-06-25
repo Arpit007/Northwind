@@ -73,7 +73,7 @@ function SignUpUser(req, res) {
 }
 
 function handleError(err, res) {
-    if (err === user.ErrorCode.UserAlreadyExists){
+    if (err === ErrorCode.UserAlreadyExists){
         res.json({ Code : statusCodes.BadRequest, Message : 'User Already Exists' });
     }
     else {

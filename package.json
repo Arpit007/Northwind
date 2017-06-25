@@ -15,7 +15,7 @@
     "express": "~4.14.1",
     "helmet": "~3.6.1",
     "jade": "~1.11.0",
-    "memCached": "~2.2.2",
+    "memcached": "~2.2.2",
     "mongoose": "~4.10.3",
     "morgan": "~1.7.0",
     "redis": "~2.7.1",

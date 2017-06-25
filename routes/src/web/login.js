@@ -59,7 +59,7 @@ router.post('/auth',function (req, res) {
 });
 
 function handleError(err, res) {
-    if (err === user.ErrorCode.UserDoesNotExists || err === user.ErrorCode.InvalidPassword){
+    if (err === ErrorCode.UserDoesNotExists || err === ErrorCode.InvalidPassword){
         res.render('errorMessage', {Message : 'User/Password do not match'});
     }
     else {
