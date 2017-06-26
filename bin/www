@@ -13,7 +13,7 @@ mongoose.Promise = require('bluebird');
 global.mDb = mongoose.connect(pvtConfig.MongoUrl);
 
 var MemCached = require('memcached');
-global.memCached = new MemCached('localhost:11211', {
+global.memCached = new MemCached(pvtConfig.MemCachedUrl, {
     retries : 10, maxExpiration : maxConcurrentSession, retry : 10000,
     remove : true, timeout : 5000, reconnect : 30000
 });
