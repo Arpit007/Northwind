@@ -21,6 +21,8 @@
     "memcached": "~2.2.2",
     "mongoose": "~4.10.3",
     "morgan": "~1.7.0",
+    "node-rsa": "^0.4.2",
+    "random-key": "^0.3.2",
     "redis": "~2.7.1",
     "serve-favicon": "~2.3.2"
   }

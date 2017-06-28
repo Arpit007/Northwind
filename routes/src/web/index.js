@@ -48,6 +48,7 @@ var corsOptions = {
     }
 };
 
+router.options('*', cors());
 router.use(cors(corsOptions));
 
 /*Non Gateway Web Calls Here*/

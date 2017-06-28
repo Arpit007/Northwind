@@ -33,7 +33,7 @@ function Password(Password) {
     if (Password.length < pubConfig.MinPasswordLength || Password.length > pubConfig.MaxPasswordLength)
         throw Error(ErrorCode.InvalidPasswordLength);
     
-    return security.encryptWithSalt(Password);
+    return security.encryptPassword(Password);
 }
 
 UserSchema.pre('save', function (next) {
@@ -48,12 +48,7 @@ UserSchema.methods.compareHashPassword = function (password) {
     var _user = this;
     return createPromise()
         .then(function () {
-            var intermediate = security.decrypt(_user.Password, security.Pass2Algo, pvtConfig.TokenKey);
-            var index = intermediate.length - pvtConfig.TokenSaltLength;
-            var pass = intermediate.substr(0, index);
-            var salt = intermediate.substr(index);
-            var tempPass = security.encrypt(password, security.Pass1Algo, salt);
-            return (pass === tempPass);
+            return security.comparePassword(password, _user.Password);
         })
         .catch(function (e) {
             console.log(e);

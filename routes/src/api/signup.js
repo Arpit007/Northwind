@@ -14,10 +14,18 @@ router.post('/*', function (req, res) {
         return;
     }
     
-    var SignUp = SignUpUser(req, res);
-    
-    if (!SignUp)
+    try {
+        var SignUp = SignUpUser(req, res);
+        if (!SignUp){
+            handleError(null, res);
+            return;
+        }
+    }
+    catch (e){
+        console.log(e);
+        handleError(null, res);
         return;
+    }
     
     SignUp.Register(function (err, Token, ID) {
         if (err){
